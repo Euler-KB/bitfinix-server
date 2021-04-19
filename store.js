@@ -20,37 +20,41 @@ const filterOrderType = (orders,type) => {
  */
 const processOrders = (id,orders, { callback , removeOrder }) =>{
 
-    const trades = [];
     const buyOrders = filterOrderType(orders,constants.ORDER_TYPES.BUY);
     const sellOrders = filterOrderType(orders,constants.ORDER_TYPES.SELL);
 
     //  get other clients orderbook
     const otherFrames = store.filter(x => x.id !== id);
 
-    if(buyOrders.length > 0){
+    const handleBuyOrders = () => {
+        const trades = [];
+        if(buyOrders.length > 0){
 
-        //  process every buy order
-        for(let k = 0 ; k < buyOrders.length; k++){
+            //  process every buy order
+            for(let k = 0 ; k < buyOrders.length; k++){
 
-            const order = buyOrders[k];
+                const order = buyOrders[k];
 
-            for(let i = 0 ; i < otherFrames.length ; i++){
+                for(let i = 0 ; i < otherFrames.length ; i++){
 
-                const frame = otherFrames[i];
-                const sellOrders = filterOrderType(frame.orders  , constants.ORDER_TYPES.SELL);
-                if(sellOrders.length === 0)
-                    continue;
+                    const frame = otherFrames[i];
+                    const sellOrders = filterOrderType(frame.orders  , constants.ORDER_TYPES.SELL);
+                    if(sellOrders.length === 0)
+                        continue;
 
-                let sellOrder = null;
-                for(let j = 0 ; j < sellOrders.length ; j++){
-                    sellOrder = sellOrders[j];
+                    let sellOrder = null;
+                    for(let j = 0 ; j < sellOrders.length ; j++){
+                        sellOrder = sellOrders[j];
 
-                    if(sellOrder.amount >= order.amount){
-                        sellOrder.amount -= order.amount;
-                        if(sellOrder.amount === 0){
-                            trades.push({ orderId: order.id , sellOrderId: sellOrder.id , amount: sellOrder.amount , price: sellOrder.price });
-                            // remove sell order
-                            removeOrder(sellOrder.id);
+                        if(sellOrder.amount >= order.amount){
+                            sellOrder.amount -= order.amount;
+                            if(sellOrder.amount === 0){
+                                trades.push({ orderId: order.id , sellOrderId: sellOrder.id , amount: sellOrder.amount , price: sellOrder.price });
+                                // remove sell order
+                                removeOrder(sellOrder.id);
+                            }
+
+                            return trades;
                         }
 
                         if(sellOrder.amount < order.amount){
@@ -61,54 +65,61 @@ const processOrders = (id,orders, { callback , removeOrder }) =>{
                             removeOrder(sellOrder.id);
                         }
                     }
+
                 }
 
             }
 
         }
+        return trades;
+    };
 
-    }
+    const handleSellOrders = () => {
 
-    if(sellOrders.length > 0){
+        const trades = [];
+        if(sellOrders.length > 0){
 
-        //  process every sell order
-        for(let k = 0 ; k < sellOrders.length; k++) {
+            //  process every sell order
+            for(let k = 0 ; k < sellOrders.length; k++) {
 
-            const order = sellOrders[k];
-            for(let i = 0 ; i < otherFrames.length ; i++) {
+                const order = sellOrders[k];
+                for(let i = 0 ; i < otherFrames.length ; i++) {
 
-                const frame = otherFrames[i];
-                const buyOrders = filterOrderType(frame.orders, constants.ORDER_TYPES.BUY);
-                if (buyOrders.length === 0)
-                    continue;
+                    const frame = otherFrames[i];
+                    const buyOrders = filterOrderType(frame.orders, constants.ORDER_TYPES.BUY);
+                    if (buyOrders.length === 0)
+                        continue;
 
-                let buyOrder = null;
-                for(let j = 0 ; j < buyOrders.length ; j++) {
-                    buyOrder = buyOrders[j];
+                    let buyOrder = null;
+                    for(let j = 0 ; j < buyOrders.length ; j++) {
+                        buyOrder = buyOrders[j];
 
-                    if(buyOrder.amount >= order.amount){
-                        trades.push({ orderId: order.id , buyOrderId: buyOrder.id , amount: buyOrder.amount , price: buyOrder.price });
-                        buyOrder.amount -= order.amount;
-                        if(buyOrder.amount === 0){
-                            removeOrder(buyOrder.id);
+                        if(buyOrder.amount >= order.amount){
+                            trades.push({ orderId: order.id , buyOrderId: buyOrder.id , amount: buyOrder.amount , price: buyOrder.price });
+                            buyOrder.amount -= order.amount;
+                            if(buyOrder.amount === 0){
+                                removeOrder(buyOrder.id);
+                            }
+                            return trades;
                         }
 
+                        if(buyOrder.amount < order.amount){
+                            trades.push({ orderId: order.id , buyOrderId: buyOrder.id , amount: buyOrder.amount , price: buyOrder.price });
+                            order.amount -= buyOrder.amount;
+                            removeOrder(buyOrder.id);
+                        }
                     }
 
-                    if(buyOrder.amount < order.amount){
-                        trades.push({ orderId: order.id , buyOrderId: buyOrder.id , amount: buyOrder.amount , price: buyOrder.price });
-                        order.amount -= buyOrder.amount;
-                        removeOrder(buyOrder.id);
-                    }
                 }
-
             }
-        }
 
-    }
+        }
+        return trades;
+    };
+
 
     //  reply with the trades
-    callback.reply(null,{ trades });
+    callback.reply(null,{ trades: [].concat(handleBuyOrders()).concat(handleSellOrders()) });
 }
 
 exports.init = () => {
