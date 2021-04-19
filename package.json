@@ -1,0 +1,22 @@
+{
+  "name": "bitfinix-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "grenache-nodejs-link": "^0.7.12",
+    "grenache-nodejs-ws": "^0.7.9"
+  },
+  "dependencies": {
+    "grenache-nodejs-http": "^0.7.12",
+    "lodash": "^4.17.21",
+    "uws": "^200.0.0"
+  }
+}
