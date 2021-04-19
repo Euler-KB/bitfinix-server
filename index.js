@@ -32,7 +32,7 @@ service.on('request', (rid,key,payload,handler) => {
             store.update(payload,handler);
         }break;
         case constants.ACTION_TYPES.QUERY_CHAIN: {
-            handler.reply(null, { payload: store.getChain()} );
+            handler.reply(null, { payload: store.getChain() } );
         }break;
 
     }
